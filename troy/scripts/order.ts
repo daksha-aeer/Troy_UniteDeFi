@@ -3,6 +3,7 @@ import { parseUnits } from "ethers";
 import { buildOrder } from "../helpers/orderUtils.js";
 import fs from 'fs';
 import IERC20ABI from "@openzeppelin/contracts/build/contracts/ERC20.json";
+import axios from 'axios';
 
 async function main() {
   const [maker] = await ethers.getSigners();
@@ -49,9 +50,20 @@ async function main() {
       auctionContract: await dac.getAddress()
     }, (key, value) => (typeof value === 'bigint' ? value.toString() : value), 2)
   );
-  
-
   console.log("✅ Order saved to order.json");
+
+  function replacer(_key: string, value: any) {
+    return typeof value === 'bigint' ? value.toString() : value;
+  }
+  
+  await axios.post("http://localhost:4000/broadcast", JSON.parse(JSON.stringify({
+    order,
+    auctionData,
+    startPrice,
+    endPrice,
+    startEndTs
+  }, replacer)));
+  console.log("✅ Auction broadcast to resolvers");
 }
 
 main().catch((err) => {

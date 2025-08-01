@@ -12,6 +12,7 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^6.1.0",
     "@typechain/hardhat": "^9.1.0",
+    "@types/express": "^5.0.3",
     "@types/minimatch": "^6.0.0",
     "dotenv": "^17.2.1",
     "ethers": "^6.15.0",
@@ -22,6 +23,7 @@
   },
   "dependencies": {
     "@1inch/solidity-utils": "^6.6.0",
-    "@openzeppelin/contracts": "^5.4.0"
+    "@openzeppelin/contracts": "^5.4.0",
+    "express": "^5.1.0"
   }
 }
