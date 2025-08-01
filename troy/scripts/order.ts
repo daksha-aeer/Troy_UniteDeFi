@@ -1,58 +1,60 @@
 import { ethers } from "hardhat";
-import { parseUnits, AbiCoder, ZeroAddress } from "ethers";
-
-const HASH_ZERO = "0x0000000000000000000000000000000000000000000000000000000000000000";
-
-
-type Order = {
-  maker: string;
-  taker: string;
-  makingAmount: bigint;
-  takingAmount: bigint;
-};
+import { parseUnits } from "ethers";
+import { buildOrder } from "../helpers/orderUtils.js";
+import fs from 'fs';
+import IERC20ABI from "@openzeppelin/contracts/build/contracts/ERC20.json";
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
-  console.log(`Using deployer: ${deployer.address}`);
+  const [maker] = await ethers.getSigners();
+  const usdc = await ethers.getContractAt(IERC20ABI.abi, '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238');
 
-  const DutchAuctionCalculator = await ethers.getContractFactory("DutchAuctionCalculator");
+  const startPrice = parseUnits('0.1', 18);   // max price (user input)
+  const endPrice = parseUnits('0.05', 18);    // min price (user input)
+  const duration = 86400n;                    // 1 day (user input)
+
+  const ts = BigInt(Math.floor(Date.now() / 1000));
+  const startEndTs = (ts << 128n) | (ts + duration);
+
+  const DutchAuctionCalculator = await ethers.getContractFactory('DutchAuctionCalculator');
   const dac = await DutchAuctionCalculator.deploy();
+  await dac.waitForDeployment();
 
-  await dac.waitForDeployment();  // ✅ replaces .deployed()
-  console.log(`DutchAuctionCalculator deployed at: ${dac.target}`); // ✅ use .target
-
-  const order: Order = {
-    maker: deployer.address,
-    taker: ZeroAddress,
-    makingAmount: parseUnits("100", 18),
-    takingAmount: parseUnits("0.1", 18),
-  };
-
-  const startTime = Math.floor(Date.now() / 1000);
-  const endTime = startTime + 60 * 10;
-
-  // ✅ use BigInt directly for shifts
-  const startTimeEndTime = (BigInt(startTime) << 128n) | BigInt(endTime);
-
-  const extraData = AbiCoder.defaultAbiCoder().encode(
-    ["uint256", "uint256", "uint256"],
-    [startTimeEndTime, parseUnits("0.1", 18), parseUnits("0.05", 18)]
+  const auctionData = ethers.solidityPacked(
+    ['address', 'uint256', 'uint256', 'uint256'],
+    [await dac.getAddress(), startEndTs, startPrice, endPrice]
   );
 
-  const takingAmount = await dac.getTakingAmount(
-    order as any,
-    "0x",
-    HASH_ZERO,
-    deployer.address,
-    order.makingAmount,
-    order.makingAmount,
-    extraData
+  const order = buildOrder(
+    {
+      makerAsset: await usdc.getAddress(),
+      takerAsset: await usdc.getAddress(),
+      makingAmount: parseUnits('100', 6),
+      takingAmount: startPrice,
+      maker: maker.address,
+    },
+    {
+      makingAmountData: auctionData,
+      takingAmountData: auctionData,
+    }
   );
 
-  console.log(`Auction result: takingAmount = ${ethers.formatUnits(takingAmount, 18)} WETH`);
+  fs.writeFileSync(
+    'order.json',
+    JSON.stringify({
+      order,
+      auctionData,
+      startEndTs: startEndTs.toString(),
+      startPrice: startPrice.toString(),
+      endPrice: endPrice.toString(),
+      auctionContract: await dac.getAddress()
+    }, (key, value) => (typeof value === 'bigint' ? value.toString() : value), 2)
+  );
+  
+
+  console.log("✅ Order saved to order.json");
 }
 
-main().catch((error) => {
-  console.error(error);
+main().catch((err) => {
+  console.error(err);
   process.exit(1);
 });
