@@ -1,3 +1,4 @@
+// priceCheck.ts
 import { ethers } from "hardhat";
 import { parseUnits } from "ethers";
 import fs from 'fs';
