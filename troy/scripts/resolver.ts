@@ -1,6 +1,9 @@
 // resolver.ts
 import axios from "axios";
 import { ethers } from "ethers";
+import IResolverExampleArtifact from "../artifacts/contracts/interfaces/IResolverExample.sol/IResolverExample.json";
+import { buildOrder } from "../helpers/orderUtils.js";
+
 
 interface Auction {
   orderId: string;
@@ -116,15 +119,7 @@ class AuctionResolver {
       const currentPrice = await this.getCurrentPrice(auction);
       console.log(`   Current Price: ${this.formatPrice(currentPrice.toString())} USDC`);
       
-      // Check if price is attractive for bidding
-      const shouldBid = await this.shouldBidOnAuction(auction, currentPrice);
       
-      if (shouldBid) {
-        console.log(`Price is attractive, should consider bidding`);
-        await this.submitBid(auction, currentPrice);
-      } else {
-        console.log(`Price not attractive yet, waiting...`);
-      }
       
     } catch (error: any) {
       console.error(`Error processing auction: ${error.message}`);

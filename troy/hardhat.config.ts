@@ -8,18 +8,18 @@ const config: HardhatUserConfig = {
     compilers: [
       {
         version: "0.8.23",
-        settings: { optimizer: { enabled: true, runs: 200 } },
+        settings: { viaIR: true, optimizer: { enabled: true, runs: 200 } },
       },
       {
         version: "0.8.28",
-        settings: { optimizer: { enabled: true, runs: 200 } },
+        settings: { viaIR: true, optimizer: { enabled: true, runs: 200 } },
       },
     ],
   },
 
   networks: {
     sepolia: {
-      url: "https://eth-sepolia.g.alchemy.com/v2/do3MioPd73DuZvve_KLIc",
+      url: process.env.ALCHEMY_RPC_URL!,
       accounts: [process.env.PRIVATE_KEY!],
     },
   }
